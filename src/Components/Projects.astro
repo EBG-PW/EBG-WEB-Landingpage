@@ -4,17 +4,23 @@ import Heading from "./Heading.astro";
 // TRANSLATION
 const { translation = {} } = Astro.props;
 
-// HUGE TODO;
-// I HAVE NO CLUE WHICH DATA I ACTUALLY GET LOL
-const projects = [
-  {
-    name: "Test Project",
-    image: "/favicon.svg",
-    description: "Test 123",
-    click: "https://ebg.pw/project/test",
-    timestamp: "2024-06-06",
-  },
-];
+interface IProject {
+  id: number;
+  puuid: string;
+  name: string;
+  description: string;
+  avatar_url: string;
+  color: string;
+  date_start: string | null;
+  date_end: string | null;
+  date_apply: string | null;
+  min_group: string;
+}
+
+const projects: IProject[] =
+  ((await (
+    await fetch(`${import.meta.env.API_URL}/api/v1/public/projects`)
+  ).json()) as IProject[]) ?? [];
 ---
 
 <style lang="scss">
@@ -88,6 +94,10 @@ const projects = [
               line-height: 1.5rem;
 
               text-align: justify;
+
+              :global(a) {
+                color: rgba(25, 25, 25);
+              }
             }
 
             a.cta {
@@ -105,7 +115,7 @@ const projects = [
             }
           }
 
-          @media only screen and (max-width:420px) {
+          @media only screen and (max-width: 420px) {
             width: 100%;
 
             .container {
@@ -124,18 +134,22 @@ const projects = [
     <div class="projects">
       {
         projects.map((project) => {
+          function formatDate(dateString: string | null) {
+            if (dateString === null) return "";
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+            const year = date.getFullYear();
+
+            return `${day}.${month}.${year}`;
+          }
           return (
             <div class="project">
-              <img src={project.image} alt={project.name} />
+              <img src={project.avatar_url} alt={project.name} />
               <div class="container">
                 <Heading level="3">{project.name}</Heading>
-                <p class="date">{project.timestamp}</p>
-                <p class="description">{project.description}</p>
-                {project.click ? (
-                  <a href={project.click} class="cta"><!--
-                    -->{translation.click}<!--
-                    --></a>
-                ) : null}
+                <p class="date">{formatDate(project.date_start)}</p>
+                <p class="description" set:html={project.description} />
               </div>
             </div>
           );
